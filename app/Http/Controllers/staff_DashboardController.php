@@ -10,31 +10,39 @@ use App\Models\TransactionModel;
 use App\Models\FeeModel;
 use App\Models\ComplaintModel;
 use App\Models\WorkersModel;
+use App\Models\FeeTypeModel;
+use App\Models\Barangay_CaseModel;
+use App\Models\NotesModel;
+use App\Models\PurokModel;
+
+
+
+
 use Illuminate\Support\Facades\Auth;
 use Str;
 use Hash;
 
 class staff_DashboardController extends Controller
-{   
+{
     public function staff_profile(Request $request)
     {
-        
+
         $worker = Auth::user();
 
-       
+
         $workerProfile = WorkersModel::find($worker->Worker_ID);
 
-      
+
         return view('staff.profile', compact('workerProfile'));
     }
 
     public function staff_profile_post(Request $request)
     {
         if ($request->has('Worker_ID')) {
-   
+
             $updateRecord = WorkersModel::find($request->Worker_ID);
         } else {
-   
+
             $updateRecord = new WorkersModel;
         }
 
@@ -44,9 +52,9 @@ class staff_DashboardController extends Controller
         $updateRecord->Worker_lname = trim($request->Worker_lname);
         $updateRecord->Username = trim($request->Username);
 
-       
+
         if ($request->hasFile('Profile_pic')) {
-            
+
             if (!empty($updateRecord->Profile_pic) && file_exists(public_path('citizen_img/' . $updateRecord->Profile_pic))) {
                 unlink(public_path('citizen_img/' . $updateRecord->Profile_pic));
             }
@@ -69,16 +77,16 @@ class staff_DashboardController extends Controller
     public function staff_home (Request $request){
         $worker = Auth::user();
         $workerProfile = WorkersModel::find($worker->Worker_ID);
-        
+
         $citizen_record = CitizenModel::all();
-        $business_record = BusinessModel::all(); 
+        $business_record = BusinessModel::all();
         $data = [
             'citizen_record' => $citizen_record,
             'business_record' => $business_record,
         ];
         return view('staff.home', $data , compact('workerProfile'));
      }
-     
+
      public function staff_add_business (Request $request){
         $worker = Auth::user();
         $workerProfile = WorkersModel::find($worker->Worker_ID);
@@ -99,16 +107,15 @@ class staff_DashboardController extends Controller
       $insertRecord->Contact_NO = trim($request->Contact_NO);
       $insertRecord->BOF = trim($request->BOF);
       $insertRecord->Business_Type = trim($request->Business_Type);
-      
+
       $insertRecord->save();
 
       return redirect()->back()->with('success', "Business Record Successfully Add");
-      
+
     }
 
-
      // add_certif
-     public function staff_add_certif (Request $request){ 
+     public function staff_add_certif (Request $request){
         $worker = Auth::user();
         $workerProfile = WorkersModel::find($worker->Worker_ID);
 
@@ -124,7 +131,7 @@ class staff_DashboardController extends Controller
     }
 
     public function staff_add_citizen_post (Request $request){
-     
+
       $insertRecord = new CitizenModel;
       $insertRecord->Citizen_lname = trim($request->Citizen_lname);
       $insertRecord->Citizen_fname = trim($request->Citizen_fname);
@@ -170,21 +177,47 @@ class staff_DashboardController extends Controller
 
       return redirect()->back()->with('success', "Citizen Record Successfully Add");
     }
-  
+
     public function staff_add_feetype (Request $request){
       $worker = Auth::user();
       $workerProfile = WorkersModel::find($worker->Worker_ID);
 
+        $fee_type = FeeTypeModel::all();
+        $data = [
+            'fee_type' => $fee_type,
+        ];
+
       return view('staff.add.feetype', compact('workerProfile'));
     }
-     
-    public function staff_add_purok (Request $request){
-      $worker = Auth::user();
-      $workerProfile = WorkersModel::find($worker->Worker_ID);
 
-      return view('staff.add.purok', compact('workerProfile'));
+    public function staff_add_feetype_post (Request $request){
+
+        $insertRecord = new FeeTypeModel;
+        $insertRecord->Fee_Type = trim($request->Fee_Type);
+        $insertRecord->Fee_Amount = trim($request->Fee_Amount);
+        $insertRecord->Collection_type = trim($request->Collection_type);
+        $insertRecord->Collection_period = trim($request->Collection_period);
+        $insertRecord->Collection_start = trim($request->Collection_start);
+        $insertRecord->save();
+        return redirect()->back()->with('success', "Fee Type Record Successfully Add");
+      }
+
+
+//purok add
+      public function staff_add_purok(Request $request) {
+        $worker = Auth::user();
+        $workerProfile = WorkersModel::find($worker->Worker_ID);
+        return view('staff.add.purok', compact('workerProfile'));
     }
-   
+    public function staff_add_purok_post(Request $request) {
+        $insertRecord = new PurokModel;
+        $insertRecord->Purok_Name = trim($request->Purok_Name); // Ensure the request field name matches
+        $insertRecord->save();
+
+        return redirect()->back()->with('success', "Purok Record Successfully Added");
+    }
+
+
     public function staff_report (Request $request){
       $worker = Auth::user();
       $workerProfile = WorkersModel::find($worker->Worker_ID);
@@ -195,18 +228,52 @@ class staff_DashboardController extends Controller
     public function staff_brgy_case (Request $request){
       $worker = Auth::user();
       $workerProfile = WorkersModel::find($worker->Worker_ID);
-      
+
       return view('staff.brgy_case', compact('workerProfile'));
     }
+    public function staff_brgy_case_post (Request $request){
+
+    $insertRecord = new Barangay_CaseModel;
+    $insertRecord->Case_No = trim($request->Case_No);
+    $insertRecord->Complainant = trim($request->Complainant);
+    $insertRecord->Complainee = trim($request->Complainee);
+    $insertRecord->FeeType = trim($request->for); // Assuming 'for' maps to FeeType
+    $insertRecord->Actions_taken = trim($request->Actions_taken);
+    $insertRecord->save();
+
+    return redirect()->back()->with('success');
+      }
+
+        // notes
+         // Method to display the form
+        public function staff_add_notes(Request $request) {
+        $worker = Auth::user();
+        $workerProfile = WorkersModel::find($worker->Worker_ID);
+        return view('staff.add.notes', compact('workerProfile'));
+        }
+     public function staff_add_notes_post(Request $request) {
+
+        $insertRecord = new NotesModel;
+        $insertRecord->Note = trim($request->Note);
+        // $insertRecord->Citizen_ID = trim($request->Citizen_ID);
+        $insertRecord->Date = now()->format('Y-m-d'); // Assuming you want to save the current date
+        $insertRecord->Time = now()->format('H:i:s'); // Assuming you want to save the current time
+        $insertRecord->save();
+
+    return redirect()->back()->with('success', "Notes Record Successfully Added");
+}
+
+
     // citizen profile
     public function citizen($Citizen_ID, Request $request){
         $worker = Auth::user();
         $workerProfile = WorkersModel::find($worker->Worker_ID);
         $data['citizen_record'] = CitizenModel::find($Citizen_ID);
         $data['transaction'] = TransactionModel::where('Transaction_ID', $Citizen_ID)->get();
-        $data['fee'] = FeeModel::where('Fees_ID', $Citizen_ID)->get();
+        $data['fee_type'] = FeeTypeModel::where('FeeType_ID', $Citizen_ID)->get(); // Get a single instance
+        $data['fee'] = FeeModel::where('Fees_ID', $Citizen_ID)->get(); // Get a single instance
         $data['complaint'] = ComplaintModel::where('Case_No', $Citizen_ID)->get();
-        
+        $data['purok1'] = PurokModel::where('Purok_ID',$Citizen_ID)->get();
         return view('citizen.citizen', $data, compact('workerProfile'));
     }
 
@@ -215,13 +282,10 @@ class staff_DashboardController extends Controller
       $workerProfile = WorkersModel::find($worker->Worker_ID);
 
       $data['citizen_record']= CitizenModel::find($Citizen_ID);
-      return view ('citizen.edit', $data, compact('workerProfile')); 
-
+      return view ('citizen.edit', $data, compact('workerProfile'));
     }
 
     public function citizen_post ($Citizen_ID, Request $request){
-    
-
       $updateRecord =  CitizenModel::find($Citizen_ID);
       $updateRecord->Citizen_lname = trim($request->Citizen_lname);
       $updateRecord->Citizen_fname = trim($request->Citizen_fname);
@@ -253,38 +317,36 @@ class staff_DashboardController extends Controller
         if (!empty($updateRecord->Citizen_profile) && file_exists(public_path('citizen_img/' . $updateRecord->Citizen_profile))) {
             unlink(public_path('citizen_img/' . $updateRecord->Citizen_profile));
         }
-    
+
         // Generate a unique filename
         $randomStr = Str::random(30);
         $filename = $randomStr . '.' . $request->file('Citizen_profile')->getClientOriginalExtension();
-    
+
         // Move the uploaded image file to the portfolio directory
         $request->file('Citizen_profile')->move(public_path('citizen_img/'), $filename);
-    
+
         // Update the record with the new image filename
         $updateRecord->Citizen_profile = $filename;
     }
 
     $updateRecord->save();
-        
-    return redirect('citizen/' . $Citizen_ID)->with('success', "Profile Successfully Updated");
 
-    
+    return redirect('citizen/' . $Citizen_ID)->with('success', "Profile Successfully Updated");
 
     }
 
     public function citizen_delete($Citizen_ID) {
       $deleteRecord = CitizenModel::find($Citizen_ID);
-  
+
       if (!empty($deleteRecord->Citizen_profile) && file_exists(public_path('citizen_img/' . $deleteRecord->Citizen_profile))) {
           unlink(public_path('citizen_img/' . $deleteRecord->Citizen_profile));
       }
-  
+
       $deleteRecord->delete();
-  
+
       return redirect('staff/home')->with('success', "Record Successfully Deleted");
   }
-  
 
-  
+
+
 }
